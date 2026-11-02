@@ -53,3 +53,14 @@ def test_double_booking():
         client.post(f'/api/v1/visits/{v}/ready',headers=auth('Sam Okafor'))
     assert client.post(f'/api/v1/visits/{a}/assign',headers=auth('Sam Okafor'),json={'dock_id':'dock-a'}).status_code==200
     assert client.post(f'/api/v1/visits/{b}/assign',headers=auth('Sam Okafor'),json={'dock_id':'dock-a'}).status_code==409
+
+
+def test_cloud_auth_fails_closed(monkeypatch):
+    monkeypatch.setenv('VERCEL', '1')
+    monkeypatch.delenv('DEMO_ACCESS_PIN', raising=False)
+    missing_pin = client.post('/api/v1/auth/login', json={'name': 'Priya Shah', 'pin': ''})
+    assert missing_pin.status_code == 503
+    monkeypatch.setenv('DEMO_ACCESS_PIN', '123456')
+    monkeypatch.delenv('SESSION_SECRET', raising=False)
+    missing_signing_secret = client.post('/api/v1/auth/login', json={'name': 'Priya Shah', 'pin': '123456'})
+    assert missing_signing_secret.status_code == 503
