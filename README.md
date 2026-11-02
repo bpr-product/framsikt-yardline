@@ -1,3 +1,12 @@
+# Yardline V2 — Factory operations decision pilot
+
+**Live product:** https://framsikt-yardline.vercel.app  
+**Purpose:** Framsikt engineering fundamentals case — a working, transparent prototype for truck queue, readiness, issue ownership, capacity and audit decisions.
+
+V2 documentation: [Implementation details](docs/IMPLEMENTATION_V2.md) | [Scenario coverage](docs/SCENARIO_COVERAGE.md) | [Full blueprint](docs/YARDLINE_COMPLETE_SOLUTION_BLUEPRINT.md)
+
+This application uses synthetic data, demo identities and illustrative appointment capacity. It is not a live factory deployment or measured business outcome.
+
 # Yardline — Factory Operations Pilot
 
 A full-stack, evidence-driven factory truck turnaround and dock-coordination application for a product engineering case study.

@@ -60,3 +60,33 @@ class Event(Base):
     action = Column(String(40), nullable=False)
     note = Column(Text, nullable=True)
     at = Column(DateTime(timezone=True), default=now, nullable=False)
+
+class Issue(Base):
+    """A time-bounded operational blocker without overwriting the truck's physical stage."""
+    __tablename__ = 'issues'
+    id = Column(String(36), primary_key=True, default=uid)
+    visit_id = Column(String(36), ForeignKey('visits.id'), nullable=False, index=True)
+    code = Column(String(48), nullable=False)
+    category = Column(String(36), nullable=False)
+    description = Column(Text, nullable=False)
+    owner = Column(String(80), nullable=False)
+    severity = Column(String(12), nullable=False, default='medium')
+    blocking = Column(Boolean, nullable=False, default=True)
+    status = Column(String(20), nullable=False, default='open', index=True)
+    opened_at = Column(DateTime(timezone=True), nullable=False, default=now)
+    escalated_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolution_note = Column(Text, nullable=True)
+    __table_args__ = (Index('ix_issue_visit_status', 'visit_id', 'status'),)
+
+class ReadinessCheck(Base):
+    __tablename__ = 'readiness_checks'
+    id = Column(String(36), primary_key=True, default=uid)
+    visit_id = Column(String(36), ForeignKey('visits.id'), nullable=False, index=True)
+    code = Column(String(40), nullable=False)
+    label = Column(String(120), nullable=False)
+    required = Column(Boolean, nullable=False, default=True)
+    done = Column(Boolean, nullable=False, default=False)
+    confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    confirmed_by = Column(String(80), nullable=True)
+    __table_args__ = (UniqueConstraint('visit_id', 'code', name='uq_visit_readiness_code'),)
