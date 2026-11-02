@@ -1,0 +1,40 @@
+name: Yardline engineering checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: FastAPI workflow tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Python environment
+        run: |
+          python3 --version
+          python3 -m pip install -r backend/requirements.txt
+      - name: Verify business rules and security
+        working-directory: backend
+        run: python3 -m pytest -q tests/test_operations.py
+
+  frontend:
+    name: React + TypeScript build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Build the operator interface
+        run: |
+          node --version
+          npm --version
+          npm --prefix ui install --no-audit --no-fund
+          npm --prefix ui run build
