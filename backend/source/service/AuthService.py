@@ -8,19 +8,16 @@ DEMO_USERS = {
  'Maya Chen':'coordinator', 'Alex Rivera':'gate', 'Sam Okafor':'supervisor', 'Priya Shah':'manager'
 }
 def secret():
-    configured = os.environ.get('SESSION_SECRET')
-    if configured:
-        return configured
-    if os.environ.get('VERCEL'):
-        raise HTTPException(503, 'Demo authentication is not configured')
+    configured=os.environ.get('SESSION_SECRET')
+    if configured:return configured
+    if os.environ.get('VERCEL'):raise HTTPException(503,'Demo authentication is not configured')
     return 'local-development-only-change-me'
 def serializer():
     return URLSafeTimedSerializer(secret(),salt='yardline-v1')
 def authenticate(name,pin):
     actual=os.environ.get('DEMO_ACCESS_PIN')
     if not actual:
-        if os.environ.get('VERCEL'):
-            raise HTTPException(503, 'Demo authentication is not configured')
+        if os.environ.get('VERCEL'):raise HTTPException(503,'Demo authentication is not configured')
         actual='123456'
     if name not in DEMO_USERS or not hmac.compare_digest(pin,actual):raise HTTPException(401,'Invalid credentials')
     return {'token':serializer().dumps({'name':name,'role':DEMO_USERS[name]}),'user':{'name':name,'role':DEMO_USERS[name]}}

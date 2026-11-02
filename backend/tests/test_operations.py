@@ -25,20 +25,30 @@ client=TestClient(app)
 def auth(name):
     r=client.post('/api/v1/auth/login',json={'name':name,'pin':'123456'})
     return {'Authorization':'Bearer '+r.json()['token']}
+def confirm_ready(vid):
+    headers=auth('Sam Okafor')
+    checks=client.get(f'/api/v1/visits/{vid}/readiness',headers=headers).json()['checks']
+    for item in checks:
+        assert client.post(f"/api/v1/visits/{vid}/readiness/{item['code']}",headers=headers,json={'done':True}).status_code==200
+
 def book(number):
     return client.post('/api/v1/visits',headers=auth('Maya Chen'),json={'truck_plate':number,'driver':'Test Driver','company':'Test Logistics','direction':'inbound','cargo':'Steel coils'})
 def test_full_workflow_and_audit():
     v=book('TN-10-AB-1111');assert v.status_code==201
     vid=v.json()['id']
     assert client.post(f'/api/v1/visits/{vid}/check-in',headers=auth('Alex Rivera')).status_code==200
+    confirm_ready(vid)
     assert client.post(f'/api/v1/visits/{vid}/ready',headers=auth('Sam Okafor')).status_code==200
     assert client.post(f'/api/v1/visits/{vid}/assign',headers=auth('Sam Okafor'),json={'dock_id':'dock-a'}).status_code==200
     assert client.post(f'/api/v1/visits/{vid}/start',headers=auth('Sam Okafor')).status_code==200
     assert client.post(f'/api/v1/visits/{vid}/finish',headers=auth('Sam Okafor')).status_code==200
+    assert client.post(f'/api/v1/visits/{vid}/depart',headers=auth('Alex Rivera')).status_code==409
+    assert client.post(f'/api/v1/visits/{vid}/release-dock',headers=auth('Sam Okafor'),json={'reason':'Truck physically left bay'}).status_code==200
+    assert client.post(f'/api/v1/visits/{vid}/clearance',headers=auth('Alex Rivera'),json={'reason':'All paperwork confirmed'}).status_code==200
     assert client.post(f'/api/v1/visits/{vid}/depart',headers=auth('Alex Rivera')).status_code==200
     result=client.get(f'/api/v1/visits/{vid}',headers=auth('Priya Shah')).json()
     assert result['visit']['status']=='departed'
-    assert len(result['events'])==7
+    assert len(result['events'])==12
     assert client.get('/api/v1/docks',headers=auth('Priya Shah')).json()[0]['visit_id'] is None
 
 def test_invalid_transition_and_permissions():
@@ -50,6 +60,7 @@ def test_double_booking():
     a=book('TN-10-XX-3001').json()['id'];b=book('TN-10-XX-3002').json()['id']
     for v in [a,b]:
         client.post(f'/api/v1/visits/{v}/check-in',headers=auth('Alex Rivera'))
+        confirm_ready(v)
         client.post(f'/api/v1/visits/{v}/ready',headers=auth('Sam Okafor'))
     assert client.post(f'/api/v1/visits/{a}/assign',headers=auth('Sam Okafor'),json={'dock_id':'dock-a'}).status_code==200
     assert client.post(f'/api/v1/visits/{b}/assign',headers=auth('Sam Okafor'),json={'dock_id':'dock-a'}).status_code==409
@@ -58,9 +69,7 @@ def test_double_booking():
 def test_cloud_auth_fails_closed(monkeypatch):
     monkeypatch.setenv('VERCEL', '1')
     monkeypatch.delenv('DEMO_ACCESS_PIN', raising=False)
-    missing_pin = client.post('/api/v1/auth/login', json={'name': 'Priya Shah', 'pin': ''})
-    assert missing_pin.status_code == 503
-    monkeypatch.setenv('DEMO_ACCESS_PIN', '123456')
+    assert client.post('/api/v1/auth/login',json={'name':'Priya Shah','pin':''}).status_code==503
+    monkeypatch.setenv('DEMO_ACCESS_PIN','123456')
     monkeypatch.delenv('SESSION_SECRET', raising=False)
-    missing_signing_secret = client.post('/api/v1/auth/login', json={'name': 'Priya Shah', 'pin': '123456'})
-    assert missing_signing_secret.status_code == 503
+    assert client.post('/api/v1/auth/login',json={'name':'Priya Shah','pin':'123456'}).status_code==503

@@ -8,6 +8,7 @@ from source.dal.db_session import Base,engine,SessionLocal
 from source.dal.models import Dock
 from source.service.AuthService import authenticate,current_user
 from source.api.VisitsAPI import router
+from source.api.DecisionAPI import router as decision_router
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -17,10 +18,11 @@ async def lifespan(app:FastAPI):
             db.add_all([Dock(code='DOCK-01',direction='inbound'),Dock(code='DOCK-02',direction='outbound'),Dock(code='DOCK-03',direction='both'),Dock(code='DOCK-04',direction='both')]);db.commit()
     yield
 
-app=FastAPI(title='Yardline API',version='1.0.0',lifespan=lifespan)
+app=FastAPI(title='Yardline API',version='2.0.0',lifespan=lifespan)
 allowed=os.environ.get('ALLOWED_ORIGINS','http://localhost:5173').split(',')
 app.add_middleware(CORSMiddleware,allow_origins=allowed,allow_methods=['GET','POST'],allow_headers=['Authorization','Content-Type'])
 app.include_router(router)
+app.include_router(decision_router)
 class Login(BaseModel):
     name:str
     pin:str

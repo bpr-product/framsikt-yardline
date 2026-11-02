@@ -1,14 +1,11 @@
 name: Yardline engineering checks
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
 permissions:
   contents: read
-
 jobs:
   backend:
     name: FastAPI workflow tests
@@ -21,10 +18,9 @@ jobs:
         run: |
           python3 --version
           python3 -m pip install -r backend/requirements.txt
-      - name: Verify business rules and security
+      - name: Verify workflows, exception handling and security
         working-directory: backend
-        run: python3 -m pytest -q tests/test_operations.py
-
+        run: python3 -m pytest -q tests/
   frontend:
     name: React + TypeScript build
     runs-on: ubuntu-latest
