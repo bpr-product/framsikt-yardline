@@ -91,7 +91,7 @@ export function ScenarioLabPage(){
               <Metric label="Queue position" value={decision?`#${decision.queue_position}`:'—'} detail={scenario.urgent&&scenario.priority_approved?'Approved urgent priority':'Original first-eligible order'}/>
               <Metric label="Current condition" value={decision?STATE_LABEL[decision.status]:'Calculating…'} detail={decision?.recommended_owner??'Reviewing inputs'}/>
             </div>
-            {baseline!==null&&decision?.earliest_start_min!==null&&<div className="sl-compare"><ArrowDownRight size={16}/><span>What-if comparison: {FORMAT(baseline)} before → {FORMAT(decision.earliest_start_min)} now. <b>{decision.earliest_start_min<baseline?`Modelled improvement ${FORMAT(baseline-decision.earliest_start_min)}`:decision.earliest_start_min>baseline?`Modelled delay ${FORMAT(decision.earliest_start_min-baseline)}`:'No estimated change'}</b></span></div>}
+            {baseline!==null&&decision&&decision.earliest_start_min!==null&&<div className="sl-compare"><ArrowDownRight size={16}/><span>What-if comparison: {FORMAT(baseline)} before → {FORMAT(decision.earliest_start_min)} now. <b>{decision.earliest_start_min<baseline?`Modelled improvement ${FORMAT(baseline-decision.earliest_start_min)}`:decision.earliest_start_min>baseline?`Modelled delay ${FORMAT(decision.earliest_start_min-baseline)}`:'No estimated change'}</b></span></div>}
             {applied.length>0&&<div className="sl-changes"><CheckCircle2 size={15}/> Simulated actions: {applied.join(' · ')}</div>}
           </Card>
           <div className="sl-two">
