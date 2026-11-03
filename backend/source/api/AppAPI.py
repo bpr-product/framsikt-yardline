@@ -9,6 +9,7 @@ from source.dal.models import Dock
 from source.service.AuthService import authenticate,current_user
 from source.api.VisitsAPI import router
 from source.api.DecisionAPI import router as decision_router
+from source.api.ScenarioAPI import router as scenario_router
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -27,6 +28,7 @@ allowed=os.environ.get('ALLOWED_ORIGINS','http://localhost:5173').split(',')
 app.add_middleware(CORSMiddleware,allow_origins=allowed,allow_methods=['GET','POST'],allow_headers=['Authorization','Content-Type'])
 app.include_router(router)
 app.include_router(decision_router)
+app.include_router(scenario_router)
 class Login(BaseModel):
     name:str
     pin:str

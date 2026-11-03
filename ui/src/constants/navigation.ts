@@ -1,5 +1,5 @@
 import type{LucideIcon} from 'lucide-react';
-import {Activity,CalendarDays,ClipboardCheck,ClipboardList,LayoutDashboard,ShieldAlert,Truck,Warehouse} from 'lucide-react';
+import {Activity,CalendarDays,FlaskConical,ClipboardCheck,ClipboardList,LayoutDashboard,ShieldAlert,Truck,Warehouse} from 'lucide-react';
 export interface NavItem{path:string;label:string;icon:LucideIcon;hint:string}
 export const NAV:{group:string;items:NavItem[]}[]=[
   {group:'Operate',items:[
@@ -13,6 +13,7 @@ export const NAV:{group:string;items:NavItem[]}[]=[
     {path:'/appointments',label:'Appointments',icon:ClipboardList,hint:'Every booking and visit, searchable'},
     {path:'/capacity',label:'Capacity planner',icon:CalendarDays,hint:'Book against available dock hours'},
     {path:'/analysis',label:'Analysis',icon:Activity,hint:'Turnaround, long tail and blocker categories'},
+    {path:'/scenario-lab',label:'Scenario lab',icon:FlaskConical,hint:'Try sixteen disruption scenarios without changing live trucks'},
   ]},
 ];
 export const NAV_ITEMS=NAV.flatMap(g=>g.items);
