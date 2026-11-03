@@ -3,7 +3,7 @@ import {Activity,CalendarDays,PlayCircle,ClipboardCheck,ClipboardList,LayoutDash
 export interface NavItem{path:string;label:string;icon:LucideIcon;hint:string}
 export const NAV:{group:string;items:NavItem[]}[]=[
   {group:'Demo mode',items:[
-    {path:'/demo',label:'Demo sandbox',icon:PlayCircle,hint:'5 guided factory stories - safe to reset'},
+    {path:'/demo',label:'Operations sandbox',icon:PlayCircle,hint:'Operate trucks, allocate docks and recover from five real-world disruptions'},
   ]},
   {group:'Operate',items:[
     {path:'/command',label:'Command center',icon:LayoutDashboard,hint:'Prioritized actions across the site'},
