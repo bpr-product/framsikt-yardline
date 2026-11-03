@@ -14,7 +14,7 @@ import {ProblemDeskPage} from './Problems/ProblemDeskPage';
 import {AppointmentsPage} from './Appointments/AppointmentsPage';
 import {CapacityPage} from './Capacity/CapacityPage';
 import {AnalysisPage} from './Analysis/AnalysisPage';
-import {ScenarioLabPage} from './Scenarios/ScenarioLabPage';
+import {DemoSandboxPage} from './Demo/DemoSandboxPage';
 import type{User} from '../types/domain';
 
 const storedUser=():User|null=>{try{return JSON.parse(sessionStorage.getItem('yardline_user')||'null')}catch{return null}};
@@ -41,7 +41,8 @@ export default function App(){
           <Route path="/appointments" element={<AppointmentsPage/>}/>
           <Route path="/capacity" element={<CapacityPage/>}/>
           <Route path="/analysis" element={<AnalysisPage/>}/>
-          <Route path="/scenario-lab" element={<ScenarioLabPage/>}/>
+          <Route path="/demo" element={<DemoSandboxPage/>}/>
+          <Route path="/scenario-lab" element={<Navigate to="/demo" replace/>}/>
           <Route path="*" element={<Navigate to="/command" replace/>}/>
         </Route>
       </Routes>
