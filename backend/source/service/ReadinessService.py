@@ -55,8 +55,13 @@ def set_check(db, visit_id, code, done, actor):
         if not done and visit.status in ('ready','at_dock','loading','paused','completed'):
             # Do not rewrite the physical stage. Supervisor must open an issue to decide safe recovery.
             record(db,visit,'System','readiness_risk','Requirement revoked after dock eligibility')
+    # Build the confirmed response from the rows already in this transaction;
+    # do not re-fetch all checks and commit a second time for every click.
+    response={'visit_id':visit_id,'direction':visit.direction,
+              'ready':all(not c.required or c.done for c in checks),
+              'checks':[serialize(c) for c in checks]}
     db.commit()
-    return get(db,visit_id)
+    return response
 
 def all_ready(db,visit):
     checks=ensure(db,visit)

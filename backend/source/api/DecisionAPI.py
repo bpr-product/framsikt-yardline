@@ -55,13 +55,16 @@ def list_issues(status:str='open',db:Session=Depends(get_db),user=Depends(curren
     if status=='open':q=q.where(Issue.status.in_(['open','escalated']))
     elif status=='resolved':q=q.where(Issue.status=='resolved')
     elif status!='all':raise HTTPException(422,'Invalid issue status filter')
-    rows=db.scalars(q.limit(300)).all()
-    result=[]
-    for i in rows:
-        v=db.get(Visit,i.visit_id)
-        d=serialize(i);d['truck_plate']=v.truck_plate if v else 'Unknown truck';d['visit_status']=v.status if v else None
-        result.append(d)
-    return result
+    rows=db.execute(q.join(Visit,Visit.id==Issue.visit_id)
+        .with_only_columns(Issue,Visit.truck_plate,Visit.status).limit(300)).all()
+    return [{**serialize(i),'truck_plate':plate,'visit_status':stage} for i,plate,stage in rows]
+
+@router.get('/visits/{visit_id}/issues')
+def visit_issues(visit_id:str,db:Session=Depends(get_db),user=Depends(current_user)):
+    if not db.get(Visit,visit_id):raise HTTPException(404,'Truck visit not found')
+    rows=db.scalars(select(Issue).where(Issue.visit_id==visit_id)
+        .order_by(Issue.opened_at.desc())).all()
+    return [serialize(issue) for issue in rows]
 
 @router.post('/visits/{visit_id}/issues',status_code=201)
 def new_issue(visit_id:str,p:IssueCreate,db:Session=Depends(get_db),user=Depends(current_user)):

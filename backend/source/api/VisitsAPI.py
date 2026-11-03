@@ -4,14 +4,19 @@ from sqlalchemy.orm import Session
 from source.dal.db_session import get_db
 from source.dal.models import Visit,Dock,Event,Assignment
 from source.service.AuthService import current_user,require
-from source.service.VisitsService import create,change,detail
+from source.service.VisitsService import create,change,detail,serialize_visit
 from source.schemas.visit import VisitCreate,HoldRequest,AssignRequest
 
 router=APIRouter(prefix='/api/v1',tags=['Operations'])
 @router.get('/visits')
 def visits(db:Session=Depends(get_db),user=Depends(current_user)):
     rows=db.scalars(select(Visit).order_by(Visit.created_at.desc()).limit(300)).all()
-    return [detail(db,v) for v in rows]
+    # Collection serialization must not issue one/two SQL queries per truck.
+    # Read all active dock assignments once, then serialize in memory.
+    assigned=db.execute(select(Assignment.visit_id,Dock.code).join(Dock,Dock.id==Assignment.dock_id)
+        .where(Assignment.active_visit_id.is_not(None))).all()
+    dock_by_visit={visit_id:code for visit_id,code in assigned}
+    return [serialize_visit(v,dock_by_visit.get(v.id)) for v in rows]
 @router.post('/visits',status_code=201)
 def book(payload:VisitCreate,db:Session=Depends(get_db),user=Depends(current_user)):
     require(user,'coordinator','manager');return create(db,payload,user['name'])

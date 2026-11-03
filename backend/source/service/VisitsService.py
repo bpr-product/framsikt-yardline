@@ -11,15 +11,19 @@ def stamp():return datetime.now(timezone.utc)
 def record(db,visit,actor,action,note=None):
     db.add(Event(visit_id=visit.id,actor=actor,action=action,note=note))
 
-def detail(db,visit):
-    assignment=db.scalar(select(Assignment).where(Assignment.visit_id==visit.id,Assignment.released_at.is_(None)))
-    dock=db.get(Dock,assignment.dock_id) if assignment else None
+def serialize_visit(visit, dock_code=None):
+    """Serialize a visit without doing SQL (safe for collection endpoints)."""
     return {'id':visit.id,'truck_plate':visit.truck_plate,'driver':visit.driver,
         'company':visit.company,'direction':visit.direction,'cargo':visit.cargo,
         'scheduled_at':visit.scheduled_at,'arrival_at':visit.arrival_at,'ready_at':visit.ready_at,
         'service_started_at':visit.service_started_at,'service_finished_at':visit.service_finished_at,
         'departed_at':visit.departed_at,'created_at':visit.created_at,'status':visit.status,
-        'hold_reason':visit.hold_reason,'dock':dock.code if dock else None,'version':visit.version}
+        'hold_reason':visit.hold_reason,'dock':dock_code,'version':visit.version}
+
+def detail(db,visit):
+    assignment=db.execute(select(Assignment,Dock.code).join(Dock,Dock.id==Assignment.dock_id)
+        .where(Assignment.visit_id==visit.id,Assignment.released_at.is_(None))).first()
+    return serialize_visit(visit,assignment[1] if assignment else None)
 
 def check_blockers(db, visit):
     from source.service.IssueService import active_blockers

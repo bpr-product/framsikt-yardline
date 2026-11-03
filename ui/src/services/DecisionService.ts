@@ -1,10 +1,15 @@
 import {api} from './ApiBase';
 import type{Visit,VisitCreate} from '../types/domain';
 import type{Analytics,Decision,Diagnosis,Issue,IssueType,Planning,Readiness,IssueCode} from '../types/decisions';
+let issueTypeCache:Promise<IssueType[]>|null=null;
 export const DecisionService={
   recommendations:async()=> (await api.get<{recommendations:Decision[];data_status:string}>('/decisions')).data,
   issues:async(status:'open'|'resolved'|'all'='open')=>(await api.get<Issue[]>('/issues',{params:{status}})).data,
-  issueTypes:async()=>(await api.get<IssueType[]>('/issue-types')).data,
+  issueTypes:()=>{
+    if(!issueTypeCache)issueTypeCache=api.get<IssueType[]>('/issue-types').then(r=>r.data).catch(e=>{issueTypeCache=null;throw e});
+    return issueTypeCache;
+  },
+  issuesForVisit:async(id:string)=>(await api.get<Issue[]>(`/visits/${id}/issues`)).data,
   createIssue:async(visitId:string,payload:{code:IssueCode;description:string;owner:string;severity:string;blocking:boolean})=>(await api.post<Issue>(`/visits/${visitId}/issues`,payload)).data,
   resolveIssue:async(id:string,resolution:string)=>(await api.post<Issue>(`/issues/${id}/resolve`,{resolution})).data,
   escalateIssue:async(id:string)=>(await api.post<Issue>(`/issues/${id}/escalate`,{})).data,

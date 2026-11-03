@@ -12,10 +12,14 @@ from source.api.DecisionAPI import router as decision_router
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
-    Base.metadata.create_all(bind=engine)
-    with SessionLocal() as db:
-        if not db.scalar(select(Dock.id).limit(1)):
-            db.add_all([Dock(code='DOCK-01',direction='inbound'),Dock(code='DOCK-02',direction='outbound'),Dock(code='DOCK-03',direction='both'),Dock(code='DOCK-04',direction='both')]);db.commit()
+    # On Vercel the Neon schema is managed by migrations. Running create_all
+    # on every cold start performs unnecessary network/metadata queries.
+    # Local development can still bootstrap SQLite and seed demo docks.
+    if not os.environ.get('VERCEL') or os.environ.get('YARDLINE_BOOTSTRAP_DB')=='1':
+        Base.metadata.create_all(bind=engine)
+        with SessionLocal() as db:
+            if not db.scalar(select(Dock.id).limit(1)):
+                db.add_all([Dock(code='DOCK-01',direction='inbound'),Dock(code='DOCK-02',direction='outbound'),Dock(code='DOCK-03',direction='both'),Dock(code='DOCK-04',direction='both')]);db.commit()
     yield
 
 app=FastAPI(title='Yardline API',version='2.0.0',lifespan=lifespan)

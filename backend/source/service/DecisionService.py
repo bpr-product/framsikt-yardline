@@ -84,6 +84,9 @@ def decisions(db):
     occupied={a.dock_id:a.visit_id for a in db.scalars(select(Assignment).where(Assignment.active_dock_id.is_not(None))).all()}
     checks=readiness_map(db,[v.id for v in visits])
     issue_rows=db.scalars(select(Issue).where(Issue.status.in_(['open','escalated']))).all()
+    completed_ids=[v.id for v in visits if v.status=='completed']
+    clearances=set(db.scalars(select(Event.visit_id).where(Event.action=='clearance_confirmed',
+        Event.visit_id.in_(completed_ids))).all()) if completed_ids else set()
     problems={}
     for x in issue_rows:problems.setdefault(x.visit_id,[]).append(x)
     result=[]
@@ -138,7 +141,7 @@ def decisions(db):
                      'Service is finished, but physical departure from the bay is not confirmed.',
                      'Dock supervisor','release_dock',{})
             else:
-                done=any(e.action=='clearance_confirmed' for e in events_for(db,v.id))
+                done=v.id in clearances
                 if not done:push(v,'exit_clearance',1,'Exit clearance not confirmed',
                      'Service finished and bay released. Shipping/receiving documents must be confirmed.',
                      'Gate / dispatch','confirm_clearance',{})
