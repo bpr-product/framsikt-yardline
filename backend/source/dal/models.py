@@ -1,12 +1,26 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, Index
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, UniqueConstraint, Index
+from sqlalchemy.types import DateTime as SADateTime, TypeDecorator
 from .db_session import Base
 
 def uid():
     return str(uuid.uuid4())
 def now():
     return datetime.now(timezone.utc)
+
+class DateTime(TypeDecorator):
+    """timestamptz that always reads back timezone-aware UTC.
+
+    Postgres already returns aware values. SQLite drops the offset, which made API
+    timestamps serialize without a zone and browsers read UTC as local time.
+    """
+    impl = SADateTime
+    cache_ok = True
+    def __init__(self, timezone=True):
+        super().__init__(timezone=timezone)
+    def process_result_value(self, value, dialect):
+        return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
 
 class User(Base):
     __tablename__ = 'users'

@@ -31,13 +31,20 @@ def serialize(check):
     return {'id':check.id,'visit_id':check.visit_id,'code':check.code,'label':check.label,
             'required':check.required,'done':check.done,'confirmed_at':check.confirmed_at,'confirmed_by':check.confirmed_by}
 
+def summary(visit, checks):
+    # version lets the client keep optimistic-concurrency tokens current without refetching the visit.
+    return {'visit_id':visit.id,'direction':visit.direction,'version':visit.version,
+            'ready':all(not c.required or c.done for c in checks),'checks':[serialize(c) for c in checks]}
+
 def get(db, visit_id):
     visit=db.get(Visit,visit_id)
     if not visit:raise HTTPException(404,'Truck visit not found')
-    checks=ensure(db,visit)
-    db.commit()
-    return {'visit_id':visit_id,'direction':visit.direction,'ready':all(not c.required or c.done for c in checks),
-            'checks':[serialize(c) for c in checks]}
+    checks=db.scalars(select(ReadinessCheck).where(ReadinessCheck.visit_id == visit.id)).all()
+    if not checks:
+        # Only legacy visits without rows need a write; ordinary reads never commit.
+        checks=ensure(db,visit)
+        db.commit()
+    return summary(visit,checks)
 
 def set_check(db, visit_id, code, done, actor):
     visit=db.scalar(select(Visit).where(Visit.id==visit_id).with_for_update())
@@ -57,9 +64,7 @@ def set_check(db, visit_id, code, done, actor):
             record(db,visit,'System','readiness_risk','Requirement revoked after dock eligibility')
     # Build the confirmed response from the rows already in this transaction;
     # do not re-fetch all checks and commit a second time for every click.
-    response={'visit_id':visit_id,'direction':visit.direction,
-              'ready':all(not c.required or c.done for c in checks),
-              'checks':[serialize(c) for c in checks]}
+    response=summary(visit,checks)
     db.commit()
     return response
 

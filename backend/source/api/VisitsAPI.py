@@ -1,22 +1,20 @@
 from fastapi import APIRouter,Depends,HTTPException
-from sqlalchemy import select,func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from source.dal.db_session import get_db
-from source.dal.models import Visit,Dock,Event,Assignment
+from source.dal.models import Visit,Event
 from source.service.AuthService import current_user,require
-from source.service.VisitsService import create,change,detail,serialize_visit
+from source.service.VisitsService import create,change,detail,list_visits,list_docks,metrics as board_metrics
 from source.schemas.visit import VisitCreate,HoldRequest,AssignRequest
 
 router=APIRouter(prefix='/api/v1',tags=['Operations'])
+@router.get('/board')
+def board(db:Session=Depends(get_db),user=Depends(current_user)):
+    # One round trip for the operator shell instead of three parallel requests.
+    return {'visits':list_visits(db),'docks':list_docks(db),'metrics':board_metrics(db)}
 @router.get('/visits')
 def visits(db:Session=Depends(get_db),user=Depends(current_user)):
-    rows=db.scalars(select(Visit).order_by(Visit.created_at.desc()).limit(300)).all()
-    # Collection serialization must not issue one/two SQL queries per truck.
-    # Read all active dock assignments once, then serialize in memory.
-    assigned=db.execute(select(Assignment.visit_id,Dock.code).join(Dock,Dock.id==Assignment.dock_id)
-        .where(Assignment.active_visit_id.is_not(None))).all()
-    dock_by_visit={visit_id:code for visit_id,code in assigned}
-    return [serialize_visit(v,dock_by_visit.get(v.id)) for v in rows]
+    return list_visits(db)
 @router.post('/visits',status_code=201)
 def book(payload:VisitCreate,db:Session=Depends(get_db),user=Depends(current_user)):
     require(user,'coordinator','manager');return create(db,payload,user['name'])
@@ -49,14 +47,7 @@ def depart(visit_id:str,db:Session=Depends(get_db),user=Depends(current_user)):
     require(user,'gate','manager');return change(db,visit_id,user['name'],'depart')
 @router.get('/docks')
 def docks(db:Session=Depends(get_db),user=Depends(current_user)):
-    records=db.scalars(select(Dock).order_by(Dock.code)).all()
-    assignments=db.scalars(select(Assignment).where(Assignment.active_dock_id.is_not(None))).all()
-    occupied={a.dock_id:a.visit_id for a in assignments}
-    return [{'id':d.id,'code':d.code,'direction':d.direction,'enabled':d.enabled,'visit_id':occupied.get(d.id)} for d in records]
+    return list_docks(db)
 @router.get('/metrics')
 def metrics(db:Session=Depends(get_db),user=Depends(current_user)):
-    records=db.scalars(select(Visit)).all()
-    occupied=db.scalar(select(func.count()).select_from(Assignment).where(Assignment.active_dock_id.is_not(None)))
-    complete=[v for v in records if v.arrival_at and v.departed_at]
-    mins=[max(0,(v.departed_at.replace(tzinfo=None)-v.arrival_at.replace(tzinfo=None)).total_seconds()/60) for v in complete]
-    return {'scheduled':sum(v.status=='scheduled' for v in records),'on_site':sum(v.status not in ('scheduled','departed') for v in records),'on_hold':sum(v.status=='on_hold' for v in records),'ready':sum(v.status=='ready' for v in records),'occupied_docks':occupied,'completed':len(complete),'avg_turnaround_min':round(sum(mins)/len(mins)) if mins else None,'longest_turnaround_min':round(max(mins)) if mins else None}
+    return board_metrics(db)

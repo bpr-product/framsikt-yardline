@@ -1,7 +1,7 @@
 export type IssueCode='goods_not_ready'|'documents_missing'|'dock_unavailable'|'crew_unavailable'|'equipment_breakdown'|'quality_discrepancy'|'gate_verification'|'driver_unavailable'|'clearance_pending'|'other';
 export interface Issue {id:string;visit_id:string;truck_plate?:string;visit_status?:string;code:IssueCode;category:string;description:string;owner:string;severity:'low'|'medium'|'high'|'critical';blocking:boolean;status:'open'|'escalated'|'resolved';opened_at:string;resolved_at:string|null;escalated_at:string|null;resolution_note:string|null}
 export interface Check {id:string;visit_id:string;code:string;label:string;required:boolean;done:boolean;confirmed_at:string|null;confirmed_by:string|null}
-export interface Readiness {visit_id:string;direction:'inbound'|'outbound';ready:boolean;checks:Check[]}
+export interface Readiness {visit_id:string;direction:'inbound'|'outbound';version:number;ready:boolean;checks:Check[]}
 export interface Decision {id:string;visit_id:string;truck_plate:string;direction:'inbound'|'outbound';kind:string;priority:number;title:string;reason:string;owner:string;action:string|null;status:string;evidence:Record<string,unknown>}
 export interface Segment {label:string;minutes:number;kind:'waiting'|'service';from:string;to:string}
 export interface Diagnosis {visit_id:string;truck_plate:string;status:string;source:string;total_dwell_min:number|null;measured_segments_min:number;waiting_min:number;service_min:number;segments:Segment[];issues:(Issue&{duration_min:number})[];complete:boolean;explanation:string}

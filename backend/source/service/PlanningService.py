@@ -2,12 +2,13 @@
 from datetime import datetime, date, timedelta, timezone
 from zoneinfo import ZoneInfo
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from source.dal.models import Dock, Visit
 
 SITE_TIMEZONE = ZoneInfo('Asia/Kolkata')
 OPEN_HOUR=8
 CLOSE_HOUR=18
+INACTIVE=('cancelled','departed')
 
 
 def as_utc(value: datetime):
@@ -21,7 +22,7 @@ def is_open(local):
 
 
 def capacity(db, direction):
-    return len(db.scalars(select(Dock).where(Dock.enabled.is_(True),Dock.direction.in_(['both',direction]))).all())
+    return db.scalar(select(func.count()).select_from(Dock).where(Dock.enabled.is_(True),Dock.direction.in_(['both',direction])))
 
 
 def hour_bucket(value):
@@ -39,9 +40,23 @@ def booked_count(db,slot_start,direction,excluding=None):
     # In this pilot, one start per compatible dock/hour; no claim of real throughput.
     a=as_utc(slot_start)
     b=a+timedelta(hours=1)
-    q=select(Visit).where(Visit.direction==direction,Visit.scheduled_at>=a,Visit.scheduled_at<b,Visit.status.notin_(['cancelled','departed']))
+    q=select(func.count()).select_from(Visit).where(Visit.direction==direction,Visit.scheduled_at>=a,Visit.scheduled_at<b,Visit.status.notin_(INACTIVE))
     if excluding:q=q.where(Visit.id!=excluding)
-    return len(db.scalars(q).all())
+    return db.scalar(q)
+
+
+def booked_by_hour(db,d:date,direction):
+    """Count bookings for every open hour of a day in one query (not one query per slot)."""
+    a=as_utc(datetime(d.year,d.month,d.day,OPEN_HOUR,tzinfo=SITE_TIMEZONE))
+    b=as_utc(datetime(d.year,d.month,d.day,CLOSE_HOUR,tzinfo=SITE_TIMEZONE))
+    rows=db.scalars(select(Visit.scheduled_at).where(Visit.direction==direction,Visit.scheduled_at>=a,
+        Visit.scheduled_at<b,Visit.status.notin_(INACTIVE))).all()
+    counts={}
+    for at in rows:
+        # Stored values are UTC; SQLite returns them without tzinfo.
+        hour=(at if at.tzinfo else at.replace(tzinfo=timezone.utc)).astimezone(SITE_TIMEZONE).hour
+        counts[hour]=counts.get(hour,0)+1
+    return counts
 
 
 def validate_slot(db, scheduled_at, direction, excluding=None):
@@ -60,10 +75,11 @@ def slots(db,day:str,direction:str):
     except ValueError:raise HTTPException(422,'Use a date in YYYY-MM-DD format')
     if direction not in ('inbound','outbound'):raise HTTPException(422,'Direction must be inbound or outbound')
     cap=capacity(db,direction)
+    booked=booked_by_hour(db,d,direction)
     rows=[]
     for hour in range(OPEN_HOUR,CLOSE_HOUR):
         local=datetime(d.year,d.month,d.day,hour,tzinfo=SITE_TIMEZONE)
-        count=booked_count(db,local,direction)
+        count=booked.get(hour,0)
         rows.append({'start_at':local.isoformat(),'booked':count,'capacity':cap,
                      'available':local.weekday()<6 and count<cap and cap>0,
                      'reason': 'Site closed' if local.weekday()>=6 else 'No compatible docks' if not cap else 'Slot full' if count>=cap else 'Space available'})

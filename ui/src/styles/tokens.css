@@ -1,0 +1,81 @@
+/*
+ * Yardline design tokens — light, modern, premium.
+ * Soft layered surfaces, one confident accent, generous but purposeful spacing.
+ * Every color, size and radius in the app comes from here.
+ */
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #f6f7f9;
+  --bg-sidebar: #fbfbfc;
+  --surface: #ffffff;
+  --surface-2: #f8f9fb;
+  --surface-hover: #f4f5f8;
+  --surface-active: #eef0f4;
+  --line: rgba(15, 23, 42, 0.07);
+  --line-strong: rgba(15, 23, 42, 0.12);
+  --input-border: #dcdfe6;
+
+  /* Text */
+  --text: #0f172a;
+  --text-2: #334155;
+  --text-3: #64748b;
+  --text-4: #94a3b8;
+
+  /* Accent: one confident indigo for actions, focus and the active place */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --accent-ring: 0 0 0 4px rgba(79, 70, 229, 0.16);
+  --ink: #0f172a;
+  --brand-gold: #e2b14a;
+
+  /* Status tones: text / soft background / solid (dots, bars) */
+  --neutral: #475569;  --neutral-bg: #f1f5f9;  --neutral-solid: #94a3b8;
+  --blue: #1d4ed8;     --blue-bg: #eff6ff;     --blue-solid: #3b82f6;
+  --green: #047857;    --green-bg: #ecfdf5;    --green-solid: #10b981;
+  --amber: #b45309;    --amber-bg: #fffbeb;    --amber-solid: #f59e0b;
+  --orange: #c2410c;   --orange-bg: #fff7ed;   --orange-solid: #f97316;
+  --red: #b91c1c;      --red-bg: #fef2f2;      --red-solid: #ef4444;
+  --violet: #6d28d9;   --violet-bg: #f5f3ff;   --violet-solid: #8b5cf6;
+  --teal: #0f766e;     --teal-bg: #f0fdfa;     --teal-solid: #14b8a6;
+  --muted: #94a3b8;    --muted-bg: #f8fafc;    --muted-solid: #cbd5e1;
+
+  /* Type */
+  --font: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+
+  /* Spacing (4px grid) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+
+  --control-h: 38px;
+  --control-h-sm: 32px;
+  --row-h: 60px;
+  --sidebar-w: 256px;
+  --topbar-h: 64px;
+  --drawer-w: 540px;
+  --content-max: 1360px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px -8px rgba(15, 23, 42, 0.08);
+  --shadow-hover: 0 2px 4px rgba(15, 23, 42, 0.04), 0 12px 28px -12px rgba(15, 23, 42, 0.18);
+  --shadow-pop: 0 4px 8px -2px rgba(15, 23, 42, 0.06), 0 20px 40px -12px rgba(15, 23, 42, 0.22);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}

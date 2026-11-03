@@ -1,2 +1,10 @@
-import React from 'react';import{createRoot}from'react-dom/client';import App from './pages/App';import './styles/app.css';import './styles/decision.css';import './styles/theme-midnight.css';
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import {BrowserRouter} from 'react-router-dom';
+import '@fontsource-variable/geist';
+import App from './pages/App';
+import './styles/tokens.css';
+import './styles/base.css';
+import './styles/components.css';
+import './styles/pages.css';
+createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><App/></BrowserRouter></React.StrictMode>);

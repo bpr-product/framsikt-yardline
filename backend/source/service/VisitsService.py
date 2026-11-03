@@ -1,6 +1,6 @@
 """Truck state transitions. Physical occupancy, readiness and open issues remain separate."""
 from datetime import datetime, timezone
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from source.dal.models import Visit, Assignment, Dock, Event
@@ -19,6 +19,33 @@ def serialize_visit(visit, dock_code=None):
         'service_started_at':visit.service_started_at,'service_finished_at':visit.service_finished_at,
         'departed_at':visit.departed_at,'created_at':visit.created_at,'status':visit.status,
         'hold_reason':visit.hold_reason,'dock':dock_code,'version':visit.version}
+
+def list_visits(db):
+    rows=db.scalars(select(Visit).order_by(Visit.created_at.desc()).limit(300)).all()
+    # Collection serialization must not issue one/two SQL queries per truck.
+    # Read all active dock assignments once, then serialize in memory.
+    assigned=db.execute(select(Assignment.visit_id,Dock.code).join(Dock,Dock.id==Assignment.dock_id)
+        .where(Assignment.active_visit_id.is_not(None))).all()
+    dock_by_visit={visit_id:code for visit_id,code in assigned}
+    return [serialize_visit(v,dock_by_visit.get(v.id)) for v in rows]
+
+def list_docks(db):
+    records=db.scalars(select(Dock).order_by(Dock.code)).all()
+    occupied=dict(db.execute(select(Assignment.dock_id,Assignment.visit_id).where(Assignment.active_dock_id.is_not(None))).all())
+    return [{'id':d.id,'code':d.code,'direction':d.direction,'enabled':d.enabled,'visit_id':occupied.get(d.id)} for d in records]
+
+def metrics(db):
+    # Aggregate in SQL; only completed journeys are read back for turnaround.
+    counts=dict(db.execute(select(Visit.status,func.count()).group_by(Visit.status)).all())
+    occupied=db.scalar(select(func.count()).select_from(Assignment).where(Assignment.active_dock_id.is_not(None)))
+    complete=db.execute(select(Visit.arrival_at,Visit.departed_at)
+        .where(Visit.arrival_at.is_not(None),Visit.departed_at.is_not(None))).all()
+    mins=[max(0,(d.replace(tzinfo=None)-a.replace(tzinfo=None)).total_seconds()/60) for a,d in complete]
+    return {'scheduled':counts.get('scheduled',0),
+        # Cancelled appointments never entered the site, so they are not on site.
+        'on_site':sum(n for s,n in counts.items() if s not in ('scheduled','departed','cancelled')),
+        'on_hold':counts.get('on_hold',0),'ready':counts.get('ready',0),'occupied_docks':occupied,'completed':len(complete),
+        'avg_turnaround_min':round(sum(mins)/len(mins)) if mins else None,'longest_turnaround_min':round(max(mins)) if mins else None}
 
 def detail(db,visit):
     assignment=db.execute(select(Assignment,Dock.code).join(Dock,Dock.id==Assignment.dock_id)
