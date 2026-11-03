@@ -35,3 +35,4 @@ jobs:
           npm --prefix ui install --no-audit --no-fund
           npm --prefix ui run build
           node --experimental-strip-types --test ui/scripts/test-demo-sandbox.mjs
+          node --experimental-strip-types --test ui/scripts/test-operations-sandbox.mjs
