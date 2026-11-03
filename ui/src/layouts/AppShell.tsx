@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {NavLink,Outlet,useLocation,useNavigate,useOutletContext} from 'react-router-dom';
-import {AlertTriangle,Bell,LogOut,Menu,RotateCw,Search,Warehouse,X} from 'lucide-react';
+import {AlertTriangle,Bell,LogOut,Menu,RotateCw,Search,ShieldCheck,Warehouse,X} from 'lucide-react';
 import {useWorkspace} from '../context/WorkspaceContext';
 import {NAV,NAV_ITEMS} from '../constants/navigation';
 import {ROLE_NAMES,initials} from '../constants/labels';
@@ -18,6 +18,7 @@ export function AppShell(){
   const location=useLocation();
   const [menu,setMenu]=useState(false),[form,setForm]=useState<VisitFormIntent|null>(null);
   const current=NAV_ITEMS.find(n=>location.pathname.startsWith(n.path));
+  const isDemo=location.pathname.startsWith('/demo');
   const counts:Record<string,number>={'/docks':board.metrics.ready,'/problems':board.metrics.on_hold};
   const openForm=useCallback((intent:VisitFormIntent)=>setForm(intent),[]);
   const outlet=useMemo<ShellContext>(()=>({openForm}),[openForm]);
@@ -30,7 +31,7 @@ export function AppShell(){
       <nav className="nav">{NAV.map(g=><div className="nav-group" key={g.group}>
         <div className="nav-label">{g.group}</div>
         {g.items.map(item=><NavLink key={item.path} to={item.path} title={item.hint} className={({isActive})=>`nav-item${isActive?' is-active':''}`}>
-          <item.icon size={17}/><span>{item.label}</span>{!!counts[item.path]&&<span className="nav-count">{counts[item.path]}</span>}
+          <item.icon size={17}/><span>{item.label}</span>{!isDemo&&!!counts[item.path]&&<span className="nav-count">{counts[item.path]}</span>}
         </NavLink>)}
       </div>)}</nav>
       <div className="sidebar-foot">
@@ -44,10 +45,10 @@ export function AppShell(){
       <header className="topbar">
         <button className="icon-btn mobile-only" aria-label="Open menu" onClick={()=>setMenu(true)}><Menu size={18}/></button>
         <div className="crumb">Plant 01 <span>/</span> <b>{current?.label??'Workspace'}</b></div>
-        <QuickFind/>
+        {isDemo?<div className="sb-topbar-label"><ShieldCheck size={15}/> Isolated demo - no live changes</div>:<QuickFind/>}
         <div className="topbar-right">
-          <SyncStatus refreshing={refreshing} error={error} updatedAt={updatedAt} onRefresh={()=>void refresh()}/>
-          <NavLink to="/problems" className="icon-btn" title={`${board.metrics.on_hold} truck(s) on hold`} aria-label="Trucks on hold"><Bell size={17}/>{board.metrics.on_hold>0&&<span className="dot-badge">{board.metrics.on_hold}</span>}</NavLink>
+          {!isDemo&&<SyncStatus refreshing={refreshing} error={error} updatedAt={updatedAt} onRefresh={()=>void refresh()}/>}
+          {!isDemo&&<NavLink to="/problems" className="icon-btn" title={`${board.metrics.on_hold} truck(s) on hold`} aria-label="Trucks on hold"><Bell size={17}/>{board.metrics.on_hold>0&&<span className="dot-badge">{board.metrics.on_hold}</span>}</NavLink>}
         </div>
       </header>
       <main className="content"><Outlet context={outlet}/></main>
